@@ -5,6 +5,7 @@ namespace App\Services\CurrencySource\CentralBank\SoapCentralBank;
 use App\Models\Data\CurrencyHistoryInterface;
 use App\Models\Data\CurrencyHistoryItemInterface;
 use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 
 class HistoryResponse implements HistoryResponseInterface
@@ -36,7 +37,9 @@ class HistoryResponse implements HistoryResponseInterface
                 }
                 $historyItems[] = $currentItem;
                 $lastItem = $currentItem;
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                Log::error($e);
+            }
         }
         return $historyItems;
     }
@@ -61,7 +64,9 @@ class HistoryResponse implements HistoryResponseInterface
             $xml = simplexml_load_string($response->getBody()->getContents());
             $xml->registerXPathNamespace('soap', 'http://www.w3.org/2003/05/soap-envelope');
             return $xml->xpath('//ValuteCursDynamic');
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            Log::error($e);
+        }
         return [];
     }
 

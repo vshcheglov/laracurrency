@@ -3,6 +3,7 @@
 namespace App\Services\CurrencySource\CentralBank\SoapCentralBank;
 
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 use SimpleXMLElement;
 
@@ -20,7 +21,8 @@ class HistoryRequest implements HistoryRequestInterface
                 'timeout' => 30,
                 'connect_timeout' => 30,
             ]);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::error($e);
             return new HistoryNullResponse();
         }
     }

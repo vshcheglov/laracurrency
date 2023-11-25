@@ -5,6 +5,7 @@ namespace App\Services\CurrencySource\CentralBank\SoapCentralBank;
 use App\Models\Data\CurrencyInfoInterface;
 use App\Models\Data\CurrencyInfoItemInterface;
 use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 
 class InfoResponse implements InfoResponseInterface
@@ -26,7 +27,8 @@ class InfoResponse implements InfoResponseInterface
     {
         try {
             $xml = simplexml_load_string($response->getBody()->getContents());
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::error($e);
             return [];
         }
 
@@ -37,7 +39,9 @@ class InfoResponse implements InfoResponseInterface
                 /** @var CurrencyInfoItemInterface $infoItem */
                 $infoItem = Container::getInstance()
                     ->make(CurrencyInfoItemInterface::class, $itemArgs);
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                Log::error($e);
+            }
             $historyItems[] = $infoItem;
         }
         return $historyItems;
@@ -64,7 +68,9 @@ class InfoResponse implements InfoResponseInterface
         try {
             $xml->registerXPathNamespace('soap', 'http://www.w3.org/2003/05/soap-envelope');
             return $xml->xpath('//Valute');
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            Log::error($e);
+        }
         return [];
     }
 

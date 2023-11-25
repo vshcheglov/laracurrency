@@ -34,7 +34,7 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
                     return now();
                 });
             } catch (\Throwable $e) {
-                Log::critical($e->getMessage());
+                Log::error($e);
             }
             return false;
         });
