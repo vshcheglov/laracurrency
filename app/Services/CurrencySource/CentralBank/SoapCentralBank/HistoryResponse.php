@@ -81,7 +81,7 @@ class HistoryResponse implements HistoryResponseInterface
         return $lastItem && $currentItem->getDate()->diff($lastItem->getDate())->days > 1;
     }
 
-    private function addHistoryItemsForMissedDays(&$historyItems, ?CurrencyHistoryItemInterface $lastItem, CurrencyHistoryItemInterface $currentItem)
+    private function addHistoryItemsForMissedDays(&$historyItems, CurrencyHistoryItemInterface $lastItem, CurrencyHistoryItemInterface $currentItem)
     {
         $missedDates = $this->getMissedDates($lastItem->getDate(), $currentItem->getDate());
         foreach ($missedDates as $missingDate) {
