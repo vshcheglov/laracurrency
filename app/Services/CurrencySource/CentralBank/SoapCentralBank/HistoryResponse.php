@@ -24,13 +24,18 @@ class HistoryResponse implements HistoryResponseInterface
     private function prepareItems(ResponseInterface $response): array
     {
         $historyItems = [];
+        $lastItem = null;
         foreach ($this->parseXmlItems($response) as $xmlItem) {
             try {
                 $historyItemArgs = $this->prepareItemArgs($xmlItem);
-                /** @var CurrencyHistoryItemInterface $historyItem */
-                $historyItem = Container::getInstance()
+                /** @var CurrencyHistoryItemInterface $currentItem */
+                $currentItem = Container::getInstance()
                     ->make(CurrencyHistoryItemInterface::class, $historyItemArgs);
-                $historyItems[] = $historyItem;
+                if ($this->needToAddMissedDays($lastItem, $currentItem)) {
+                    $this->addHistoryItemsForMissedDays($historyItems, $lastItem, $currentItem);
+                }
+                $historyItems[] = $currentItem;
+                $lastItem = $currentItem;
             } catch (\Throwable) {}
         }
         return $historyItems;
@@ -64,5 +69,47 @@ class HistoryResponse implements HistoryResponseInterface
     {
         $dateTime = \DateTime::createFromFormat(\DateTime::ATOM, $date);
         return $dateTime;
+    }
+
+    private function needToAddMissedDays(?CurrencyHistoryItemInterface $lastItem, CurrencyHistoryItemInterface $currentItem): bool
+    {
+        return $lastItem && $currentItem->getDate()->diff($lastItem->getDate())->days > 1;
+    }
+
+    private function addHistoryItemsForMissedDays(&$historyItems, ?CurrencyHistoryItemInterface $lastItem, CurrencyHistoryItemInterface $currentItem)
+    {
+        $missedDates = $this->getMissedDates($lastItem->getDate(), $currentItem->getDate());
+        foreach ($missedDates as $missingDate) {
+            $historyItems[] = $this->createMissingHistoryItem($missingDate, $lastItem);
+        }
+    }
+
+    private function getMissedDates(\DateTime $startDate, \DateTime $endDate): array
+    {
+        $missingDates = [];
+        $start = clone $startDate;
+        $period = new \DatePeriod(
+            $start->modify('+1 day'),
+            new \DateInterval('P1D'),
+            $endDate
+        );
+
+        foreach ($period as $date) {
+            $missingDates[] = $date;
+        }
+
+        return $missingDates;
+    }
+
+    private function createMissingHistoryItem(\DateTime $date, CurrencyHistoryItemInterface $lastHistoryItem): CurrencyHistoryItemInterface
+    {
+        $newHistoryItem = Container::getInstance()
+            ->make(CurrencyHistoryItemInterface::class, [
+                'date' => $date,
+                'nominal' => $lastHistoryItem->getNominal(),
+                'rate' => $lastHistoryItem->getRate(),
+                'unitRate' => $lastHistoryItem->getUnitRate()
+            ]);
+        return $newHistoryItem;
     }
 }
